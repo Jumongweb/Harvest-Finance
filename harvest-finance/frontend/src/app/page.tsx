@@ -1,64 +1,94 @@
-import Image from "next/image";
+'use client';
+
+import { WalletButton, BalanceDisplay } from '@/components/wallet';
+import { Card, CardHeader, CardBody, Container, Badge } from '@/components/ui';
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+    <div className="min-h-screen bg-gradient-to-b from-harvest-green-50 to-white">
+      {/* Header */}
+      <header className="border-b border-gray-200 bg-white/80 backdrop-blur-sm sticky top-0 z-40">
+        <Container size="xl">
+          <div className="flex items-center justify-between h-16 px-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-harvest-green-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">HF</span>
+              </div>
+              <span className="font-semibold text-gray-900">Harvest Finance</span>
+            </div>
+            <WalletButton />
+          </div>
+        </Container>
+      </header>
+
+      {/* Main Content */}
+      <main>
+        <Container size="xl" className="py-8 px-4">
+          {/* Hero Section */}
+          <div className="text-center mb-12">
+            <Badge variant="primary" isPill className="mb-4">
+              DeFi for Agriculture
+            </Badge>
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+              Empowering Farmers Through Blockchain
+            </h1>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              A decentralized platform connecting farmers, buyers, and inspectors
+              for transparent agricultural finance.
+            </p>
+          </div>
+
+          {/* Dashboard Grid */}
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* Balance Card */}
+            <div className="md:col-span-1">
+              <BalanceDisplay />
+            </div>
+
+            {/* Stats Cards */}
+            <div className="md:col-span-2 grid sm:grid-cols-2 gap-6">
+              <Card variant="default" padding="lg">
+                <CardHeader
+                  title="Active Vaults"
+                  subtitle="Currently earning yield"
+                />
+                <CardBody>
+                  <p className="text-3xl font-bold text-harvest-green-600">3</p>
+                </CardBody>
+              </Card>
+
+              <Card variant="default" padding="lg">
+                <CardHeader
+                  title="Total Deposited"
+                  subtitle="Across all vaults"
+                />
+                <CardBody>
+                  <p className="text-3xl font-bold text-harvest-green-600">$750.00</p>
+                </CardBody>
+              </Card>
+
+              <Card variant="default" padding="lg">
+                <CardHeader
+                  title="Pending Rewards"
+                  subtitle="Available to claim"
+                />
+                <CardBody>
+                  <p className="text-3xl font-bold text-emerald-600">$12.50</p>
+                </CardBody>
+              </Card>
+
+              <Card variant="default" padding="lg">
+                <CardHeader
+                  title="APY Average"
+                  subtitle="Weighted by deposit"
+                />
+                <CardBody>
+                  <p className="text-3xl font-bold text-blue-600">8.5%</p>
+                </CardBody>
+              </Card>
+            </div>
+          </div>
+        </Container>
       </main>
     </div>
   );
