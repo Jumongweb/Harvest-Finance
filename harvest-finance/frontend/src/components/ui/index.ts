@@ -30,6 +30,20 @@ export type { BadgeProps } from './Badge';
 export { Container, Section, Stack, Inline } from './Container';
 export type { ContainerProps, SectionProps, StackProps, InlineProps } from './Container';
 
+export { WorldMap, WorldMapSection } from './WorldMap';
+export type { WorldMapProps, MapMarker, WorldMapSectionProps } from './WorldMap';
+
+export {
+  Table,
+  TableHeader,
+  TableBody,
+  TableFooter,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableCaption,
+} from './Table';
+
 // ============================================
 // Design Tokens
 // ============================================
