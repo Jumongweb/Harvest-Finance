@@ -13,6 +13,8 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { VaultsModule } from './vaults/vaults.module';
 import { RewardsModule } from './rewards/rewards.module';
+import { AdminModule } from './admin/admin.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import {
   User,
   Order,
@@ -21,10 +23,13 @@ import {
   CreditScore,
   Vault,
   Deposit,
+  Reward,
+  Notification,
 } from './database/entities';
 import { CreateInitialSchema1700000000000 } from './database/migrations/1700000000000-CreateInitialSchema';
 import { CreateRewards1700000000005 } from './database/migrations/1700000000005-CreateRewards';
 import { CreateVaultsAndDeposits1700000000003 } from './database/migrations/1700000000003-CreateVaultsAndDeposits';
+import { CreateNotifications1700000000006 } from './database/migrations/1700000000006-CreateNotifications';
 
 @Module({
   imports: [
@@ -49,11 +54,13 @@ import { CreateVaultsAndDeposits1700000000003 } from './database/migrations/1700
           Vault,
           Deposit,
           Reward,
+          Notification,
         ],
         migrations: [
           CreateInitialSchema1700000000000,
           CreateVaultsAndDeposits1700000000003,
           CreateRewards1700000000005,
+          CreateNotifications1700000000006,
         ],
         synchronize: false, // Disable auto-sync, use migrations
         migrationsRun: false, // Run migrations manually
@@ -88,6 +95,8 @@ import { CreateVaultsAndDeposits1700000000003 } from './database/migrations/1700
     VerificationModule,
     DatabaseModule,
     RewardsModule,
+    NotificationsModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

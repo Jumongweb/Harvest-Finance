@@ -14,6 +14,8 @@ import {
   VaultResponseDto,
   DepositResponseDto,
 } from './dto/vault-response.dto';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../database/entities/notification.entity';
 
 @Injectable()
 export class VaultsService {
@@ -23,6 +25,7 @@ export class VaultsService {
     @InjectRepository(Deposit)
     private depositRepository: Repository<Deposit>,
     private dataSource: DataSource,
+    private notificationsService: NotificationsService,
   ) {}
 
   /**
@@ -111,6 +114,16 @@ export class VaultsService {
       return { deposit: savedDeposit, vault: updatedVault };
     });
 
+    // Check for large deposit alert (e.g., > 10,000)
+    if (amount >= 10000) {
+      await this.notificationsService.create({
+        title: 'Large Deposit Alert',
+        message: `A large deposit of ${amount} has been initiated for vault ${vault.vaultName}.`,
+        type: NotificationType.LARGE_TRANSACTION,
+        adminOnly: true,
+      });
+    }
+
     // Mock blockchain confirmation for now
     // In production, this would be handled by a blockchain service
     const confirmedDeposit = await this.confirmDeposit(result.deposit.id);
@@ -153,6 +166,14 @@ export class VaultsService {
     if (!updatedDeposit) {
       throw new NotFoundException('Deposit not found after confirmation');
     }
+
+    // Trigger notification for user
+    await this.notificationsService.create({
+      userId: updatedDeposit.userId,
+      title: 'Deposit Confirmed',
+      message: `Your deposit of ${updatedDeposit.amount} into vault ${updatedDeposit.vaultId} has been confirmed.`,
+      type: NotificationType.DEPOSIT,
+    });
 
     return updatedDeposit;
   }

@@ -15,3 +15,4 @@ export { Vault, VaultType, VaultStatus } from './vault.entity';
 export { Deposit, DepositStatus } from './deposit.entity';
 
 export { Reward, RewardStatus } from './reward.entity';
+export { Notification, NotificationType } from './notification.entity';
