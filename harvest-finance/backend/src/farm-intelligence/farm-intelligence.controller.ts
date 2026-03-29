@@ -4,6 +4,7 @@ import { SavingsProjectionService } from './services/savings-projection.service'
 import { BudgetRecommendationService } from './services/budget-recommendation.service';
 import { AlertsService } from './services/alerts.service';
 import { HistoricalAnalyticsService } from './services/historical-analytics.service';
+import { CropPriceService } from './services/crop-price.service';
 
 @Controller('farm-intelligence')
 @UseGuards(JwtAuthGuard)
@@ -13,6 +14,8 @@ export class FarmIntelligenceController {
     private readonly budgetService: BudgetRecommendationService,
     private readonly alertsService: AlertsService,
     private readonly analyticsService: HistoricalAnalyticsService,
+    private readonly cropPriceService: CropPriceService, 
+
   ) {}
 
   @Get('projection')
@@ -40,4 +43,18 @@ export class FarmIntelligenceController {
   getAnalytics(@Query('userId') userId: string) {
     return this.analyticsService.getAnalytics(userId);
   }
+
+  @Get('crop-prices')
+getCropPrices() {
+  return this.cropPriceService.getCurrentPrices();
+}
+
+@Get('crop-prices/history')
+getCropHistory(@Query('crop') crop: string) {
+  return this.cropPriceService.getHistoricalPrices(crop);
+}
+@Get('crop-prices/insights')
+getCropInsights() {
+  return this.cropPriceService.getInsights();
+}
 }
