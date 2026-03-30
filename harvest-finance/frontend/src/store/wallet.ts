@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 import freighterApi, { isConnected, signTransaction } from '@stellar/freighter-api';
+import { isConnected, getAddress, signTransaction } from '@stellar/freighter-api';
 
 export interface TokenBalance {
   symbol: string;
@@ -45,6 +46,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
       }
 
       const publicKeyResult = await freighterApi.getAddress();
+      const publicKeyResult = await getAddress();
 
       if (publicKeyResult.error) {
         set({

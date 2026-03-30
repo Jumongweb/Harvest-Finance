@@ -11,6 +11,7 @@ import {
   Inline,
   Section
 } from '@/components/ui';
+import { Card, CardHeader, CardBody, Button, Badge, Stack, Inline, Section } from '@/components/ui';
 import { Wallet, TrendingUp, PieChart, Download, ArrowRight } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth-store';
 import axios from 'axios';

@@ -90,14 +90,16 @@ import { AddInsuranceNotificationType1700000000010 } from './database/migrations
         ],
         synchronize: false, // Disable auto-sync, use migrations
         migrationsRun: false, // Run migrations manually
+        synchronize: false,
+        migrationsRun: false,
         logging: configService.get<string>('NODE_ENV') === 'development',
       }),
       inject: [ConfigService],
     }),
     CacheModule.register({
       isGlobal: true,
-      ttl: 600, // 10 minutes
-      max: 100, // maximum number of items in cache
+      ttl: 600,
+      max: 100,
     }),
     AuthModule,
     UsersModule,

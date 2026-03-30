@@ -12,6 +12,10 @@ import {
 import { User } from './user.entity';
 import { Deposit } from './deposit.entity';
 
+
+/**
+ * Vault types for different agricultural investment categories
+ */
 export enum VaultType {
   CROP_PRODUCTION = 'CROP_PRODUCTION',
   EQUIPMENT_FINANCING = 'EQUIPMENT_FINANCING',
@@ -106,6 +110,7 @@ export class Vault {
   updatedAt: Date;
 
   @ManyToOne(() => User, (user) => user.id, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'owner_id' })
   owner: User;
 
