@@ -22,6 +22,7 @@ import { DashboardStats } from '@/components/Admin/DashboardStats';
 import { VaultManagement } from '@/components/Admin/VaultManagement';
 import { UserManagement } from '@/components/Admin/UserManagement';
 import { UserActivity } from '@/components/Admin/UserActivity';
+import { AnalyticsCharts } from '@/components/Admin/AnalyticsCharts';
 import { LayoutDashboard, ShieldCheck, RefreshCw, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -35,7 +36,8 @@ export default function AdminDashboardPage() {
     activeUsers: 0,
     totalRewardsDistributed: 0,
     activeVaults: 0,
-    averageApy: 0
+    averageApy: 0,
+    totalWithdrawals: 0,
   });
 
   const [vaults, setVaults] = useState([]);
@@ -44,6 +46,16 @@ export default function AdminDashboardPage() {
   const [userSearch, setUserSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [analytics, setAnalytics] = useState<{
+    userGrowth: { period: string; value: number }[];
+    depositWithdrawTrends: { period: string; deposits: number; withdrawals: number }[];
+    vaultDistribution: { type: string; count: number; totalDeposits: number }[];
+  }>({
+    userGrowth: [],
+    depositWithdrawTrends: [],
+    vaultDistribution: [],
+  });
 
   // Modal states
   const [isVaultModalOpen, setIsVaultModalOpen] = useState(false);
@@ -58,17 +70,19 @@ export default function AdminDashboardPage() {
       const authHeader = { Authorization: `Bearer ${token}` };
       const userQuery = userSearch ? `?search=${encodeURIComponent(userSearch)}` : '';
 
-      const [statsRes, vaultsRes, activityRes, usersRes] = await Promise.all([
+      const [statsRes, vaultsRes, activityRes, usersRes, analyticsRes] = await Promise.all([
         axios.get(`${API_BASE_URL}/admin/stats`, { headers: authHeader }),
         axios.get(`${API_BASE_URL}/admin/vaults`, { headers: authHeader }),
         axios.get(`${API_BASE_URL}/admin/users/activity`, { headers: authHeader }),
         axios.get(`${API_BASE_URL}/admin/users${userQuery}`, { headers: authHeader }),
+        axios.get(`${API_BASE_URL}/admin/analytics`, { headers: authHeader }),
       ]);
 
-      setStats(statsRes.data);
+      setStats({ ...statsRes.data, totalWithdrawals: analyticsRes.data.totalWithdrawals ?? 0 });
       setVaults(vaultsRes.data);
       setActivity(activityRes.data);
       setUsers(usersRes.data);
+      setAnalytics(analyticsRes.data);
     } catch (err: any) {
       console.error('Failed to fetch admin data:', err);
       setError(err.response?.data?.message || 'Failed to load dashboard data. Ensure you have admin privileges.');
@@ -189,6 +203,16 @@ export default function AdminDashboardPage() {
 
         {/* Stats Grid */}
         <DashboardStats stats={stats} />
+
+        {/* Analytics Charts */}
+        <div>
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">Platform Analytics</h2>
+          <AnalyticsCharts
+            userGrowth={analytics.userGrowth}
+            depositWithdrawTrends={analytics.depositWithdrawTrends}
+            vaultDistribution={analytics.vaultDistribution}
+          />
+        </div>
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 gap-8">

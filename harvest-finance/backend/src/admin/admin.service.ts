@@ -9,8 +9,10 @@ import { Vault, VaultStatus } from '../database/entities/vault.entity';
 import { Deposit, DepositStatus } from '../database/entities/deposit.entity';
 import { User, UserRole } from '../database/entities/user.entity';
 import { Reward } from '../database/entities/reward.entity';
+import { Withdrawal, WithdrawalStatus } from '../database/entities/withdrawal.entity';
 import { DashboardStatsDto } from './dto/dashboard-stats.dto';
 import { CreateVaultDto, UpdateVaultDto } from './dto/vault-crud.dto';
+import { PlatformAnalyticsDto } from './dto/analytics.dto';
 
 @Injectable()
 export class AdminService {
@@ -23,6 +25,8 @@ export class AdminService {
     private userRepository: Repository<User>,
     @InjectRepository(Reward)
     private rewardRepository: Repository<Reward>,
+    @InjectRepository(Withdrawal)
+    private withdrawalRepository: Repository<Withdrawal>,
     private dataSource: DataSource,
   ) {}
 
@@ -153,5 +157,87 @@ export class AdminService {
       order: { createdAt: 'DESC' },
       take: 100, // Limit to recent 100
     });
+  }
+
+  /**
+   * Platform Analytics - time-series data for charts
+   */
+  async getPlatformAnalytics(): Promise<PlatformAnalyticsDto> {
+    const [userGrowthRaw, depositTrendsRaw, withdrawalTrendsRaw, vaultDistRaw, totalWithdrawalsResult] =
+      await Promise.all([
+        // Monthly user registrations over last 12 months
+        this.dataSource.query(`
+          SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'YYYY-MM') AS period,
+                 COUNT(*)::int AS value
+          FROM users
+          WHERE created_at >= NOW() - INTERVAL '12 months'
+          GROUP BY period
+          ORDER BY period ASC
+        `),
+
+        // Monthly confirmed deposit totals over last 12 months
+        this.dataSource.query(`
+          SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'YYYY-MM') AS period,
+                 COALESCE(SUM(amount), 0)::float AS deposits
+          FROM deposits
+          WHERE status = 'CONFIRMED'
+            AND created_at >= NOW() - INTERVAL '12 months'
+          GROUP BY period
+          ORDER BY period ASC
+        `),
+
+        // Monthly confirmed withdrawal totals over last 12 months
+        this.dataSource.query(`
+          SELECT TO_CHAR(DATE_TRUNC('month', created_at), 'YYYY-MM') AS period,
+                 COALESCE(SUM(amount), 0)::float AS withdrawals
+          FROM withdrawals
+          WHERE status = 'CONFIRMED'
+            AND created_at >= NOW() - INTERVAL '12 months'
+          GROUP BY period
+          ORDER BY period ASC
+        `),
+
+        // Vault type distribution
+        this.dataSource.query(`
+          SELECT type,
+                 COUNT(*)::int AS count,
+                 COALESCE(SUM(total_deposits), 0)::float AS "totalDeposits"
+          FROM vaults
+          WHERE status = 'ACTIVE'
+          GROUP BY type
+          ORDER BY count DESC
+        `),
+
+        // Total confirmed withdrawals
+        this.withdrawalRepository
+          .createQueryBuilder('w')
+          .select('SUM(w.amount)', 'total')
+          .where('w.status = :status', { status: WithdrawalStatus.CONFIRMED })
+          .getRawOne(),
+      ]);
+
+    // Merge deposit and withdrawal trends by period
+    const periodMap = new Map<string, { deposits: number; withdrawals: number }>();
+    for (const row of depositTrendsRaw) {
+      periodMap.set(row.period, { deposits: row.deposits, withdrawals: 0 });
+    }
+    for (const row of withdrawalTrendsRaw) {
+      const existing = periodMap.get(row.period) ?? { deposits: 0, withdrawals: 0 };
+      periodMap.set(row.period, { ...existing, withdrawals: row.withdrawals });
+    }
+    const depositWithdrawTrends = Array.from(periodMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([period, vals]) => ({ period, ...vals }));
+
+    return {
+      userGrowth: userGrowthRaw.map((r: any) => ({ period: r.period, value: r.value })),
+      depositWithdrawTrends,
+      vaultDistribution: vaultDistRaw.map((r: any) => ({
+        type: r.type,
+        count: r.count,
+        totalDeposits: r.totalDeposits,
+      })),
+      totalWithdrawals: parseFloat(totalWithdrawalsResult?.total || '0'),
+    };
   }
 }

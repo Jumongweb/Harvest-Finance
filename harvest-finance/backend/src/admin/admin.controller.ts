@@ -22,6 +22,7 @@ import {
 } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { DashboardStatsDto } from './dto/dashboard-stats.dto';
+import { PlatformAnalyticsDto } from './dto/analytics.dto';
 import { CreateVaultDto, UpdateVaultDto } from './dto/vault-crud.dto';
 import { UpdateUserStatusDto } from './dto/user-status.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -42,6 +43,13 @@ export class AdminController {
   @ApiResponse({ status: 200, type: DashboardStatsDto })
   async getDashboardStats(): Promise<DashboardStatsDto> {
     return this.adminService.getDashboardStats();
+  }
+
+  @Get('analytics')
+  @ApiOperation({ summary: 'Get platform analytics for charts' })
+  @ApiResponse({ status: 200, type: PlatformAnalyticsDto })
+  async getPlatformAnalytics(): Promise<PlatformAnalyticsDto> {
+    return this.adminService.getPlatformAnalytics();
   }
 
   @Get('vaults')
