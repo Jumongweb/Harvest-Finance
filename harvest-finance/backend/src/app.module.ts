@@ -20,6 +20,7 @@ import { AdminModule } from './admin/admin.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ExportModule } from './export/export.module';
 import { FarmVaultsModule } from './farm-vaults/farm-vaults.module';
+import { RealtimeModule } from './realtime/realtime.module';
 import {
   User,
   Order,
@@ -27,7 +28,6 @@ import {
   Verification,
   CreditScore,
   Vault,
-  VaultDeposit,
   Deposit,
   Notification,
   Achievement,
@@ -65,7 +65,6 @@ import { CreateFarmVaults1700000000008 } from './database/migrations/17000000000
           Verification,
           CreditScore,
           Vault,
-          VaultDeposit,
           Deposit,
           Achievement,
           Reward,
@@ -108,6 +107,7 @@ import { CreateFarmVaults1700000000008 } from './database/migrations/17000000000
     AdminModule,
     ExportModule,
     FarmVaultsModule,
+    RealtimeModule,
     LoggerModule,
   ],
   controllers: [AppController],

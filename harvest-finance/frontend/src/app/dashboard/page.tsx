@@ -2,6 +2,7 @@
 
 import React, { useEffect } from "react";
 import { VaultOverview } from "@/components/dashboard/VaultOverview";
+import { VaultActivityFeed } from "@/components/dashboard/VaultActivityFeed";
 import { WeatherWidget } from "@/components/dashboard/WeatherWidget";
 import { SeasonalTipsList, MilestoneNotification } from "@/components/seasonal-tips";
 import { AIAssistantChat } from "@/components/ai-assistant";
@@ -106,6 +107,11 @@ export default function DashboardPage() {
       {/* Main Content Sections */}
       <div className="pt-4 border-t border-gray-200">
         <VaultOverview />
+      </div>
+
+      {/* Real-Time Vault Activity Feed */}
+      <div className="pt-4 border-t border-gray-200">
+        <VaultActivityFeed />
       </div>
 
       {/* AI Assistant */}

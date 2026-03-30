@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { FarmVault, FarmVaultStatus } from '../database/entities/farm-vault.entity';
 import { CropCycle } from '../database/entities/crop-cycle.entity';
+import { VaultGateway } from '../realtime/vault.gateway';
 
 @Injectable()
 export class FarmVaultsService {
@@ -12,6 +13,7 @@ export class FarmVaultsService {
     @InjectRepository(CropCycle)
     private cropCycleRepository: Repository<CropCycle>,
     private dataSource: DataSource,
+    private vaultGateway: VaultGateway,
   ) {}
 
   async createVault(userId: string, data: { name: string; cropCycleId: string; targetAmount: number }) {
@@ -44,7 +46,33 @@ export class FarmVaultsService {
     }
 
     vault.balance = Number(vault.balance) + amount;
-    return this.farmVaultRepository.save(vault);
+    const saved = await this.farmVaultRepository.save(vault);
+
+    // Emit real-time deposit event
+    this.vaultGateway.emitDeposit({
+      vaultId,
+      vaultName: vault.name,
+      amount,
+      userId,
+      newBalance: Number(saved.balance),
+    });
+
+    // Check milestone progress and emit if crossed
+    const progressPercentage = Math.round((Number(saved.balance) / Number(vault.targetAmount)) * 100);
+    const milestones = [25, 50, 75, 100];
+    const prevProgress = Math.round(((Number(saved.balance) - amount) / Number(vault.targetAmount)) * 100);
+    for (const target of milestones) {
+      if (prevProgress < target && progressPercentage >= target) {
+        this.vaultGateway.emitMilestone({
+          vaultId,
+          vaultName: vault.name,
+          milestone: `${target}% savings target reached`,
+          userId,
+        });
+      }
+    }
+
+    return saved;
   }
 
   async getUserVaults(userId: string) {
