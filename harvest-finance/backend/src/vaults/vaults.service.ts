@@ -17,6 +17,8 @@ import {
 } from './dto/vault-response.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../database/entities/notification.entity';
+import { CustomLoggerService } from '../logger/custom-logger.service';
+import { VaultGateway } from '../realtime/vault.gateway';
 
 @Injectable()
 export class VaultsService {
@@ -29,6 +31,8 @@ export class VaultsService {
     private withdrawalRepository: Repository<Withdrawal>,
     private dataSource: DataSource,
     private notificationsService: NotificationsService,
+    private logger: CustomLoggerService,
+    private vaultGateway: VaultGateway,
   ) {}
 
   /**
@@ -135,6 +139,17 @@ export class VaultsService {
     const userTotalDeposits = await this.getUserTotalDeposits(userId);
 
     // Map to response DTOs
+    this.logger.log(`Deposit of ${amount} confirmed into vault ${vaultId} by user ${userId}`, 'VaultsService');
+
+    // Emit real-time event
+    this.vaultGateway.emitDeposit({
+      vaultId,
+      vaultName: vault.vaultName,
+      amount,
+      userId,
+      newBalance: result.vault ? Number(result.vault.totalDeposits) : 0,
+    });
+
     return {
       vault: result.vault ? this.mapVaultToResponse(result.vault) : null,
       deposit: this.mapDepositToResponse(confirmedDeposit),
@@ -319,6 +334,17 @@ export class VaultsService {
       title: 'Withdrawal Confirmed',
       message: `Your withdrawal of ${amount} from vault ${vault.vaultName} has been confirmed.`,
       type: NotificationType.DEPOSIT, // Using DEPOSIT type as a proxy for transaction notifications
+    });
+
+    this.logger.log(`Withdrawal of ${amount} confirmed from vault ${vaultId} by user ${userId}`, 'VaultsService');
+
+    // Emit real-time event
+    this.vaultGateway.emitWithdrawal({
+      vaultId,
+      vaultName: vault.vaultName,
+      amount,
+      userId,
+      newBalance: result.vault ? Number(result.vault.totalDeposits) : 0,
     });
 
     return {

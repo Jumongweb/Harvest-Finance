@@ -12,24 +12,27 @@ import {
   Badge
 } from '@/components/ui';
 import { Wallet, ArrowUpRight } from 'lucide-react';
-import axios from 'axios';
+import axios from '@/lib/api-client';
 import { useAuthStore } from '@/lib/stores/auth-store';
 
 interface DepositModalProps {
   isOpen: boolean;
   onClose: () => void;
-  vault: any;
-  onSuccess: () => void;
+  vault: {
+    id: string;
+    name: string;
+    asset: string;
+    walletBalance: string;
+    tvl: string;
+    balance?: number;
+    cropCycle?: { yieldRate: number };
+  } | null;
+  onDepositSuccess?: (vaultId: string, amount: number) => void;
 }
 
-export const DepositModal: React.FC<DepositModalProps> = ({
-  isOpen,
-  onClose,
-  vault,
-  onSuccess
-}) => {
+export const DepositModal: React.FC<DepositModalProps> = ({ isOpen, onClose, vault, onDepositSuccess }) => {
   const { token } = useAuthStore();
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,11 +46,16 @@ export const DepositModal: React.FC<DepositModalProps> = ({
     setError(null);
     try {
       await axios.post(
-        `http://localhost:3001/api/v1/farm-vaults/${vault.id}/deposit`,
+        `http://localhost:3001/api/v1/farm-vaults/${vault!.id}/deposit`,
         { amount: Number(amount) },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      onSuccess();
+
+      const depositAmount = parseFloat(amount);
+      if (vault && !isNaN(depositAmount) && depositAmount > 0) {
+        onDepositSuccess?.(vault.id, depositAmount);
+      }
+
       onClose();
       setAmount('');
     } catch (err: any) {
@@ -66,9 +74,9 @@ export const DepositModal: React.FC<DepositModalProps> = ({
           <div className="bg-harvest-green-50 p-4 rounded-xl border border-harvest-green-100 flex items-center justify-between">
             <div>
               <p className="text-xs font-semibold text-harvest-green-700 uppercase tracking-wider">Active Vault</p>
-              <h4 className="font-bold text-gray-900">{vault.name}</h4>
+              <h4 className="font-bold text-gray-900">{vault?.name}</h4>
             </div>
-            <Badge variant="success">APY: {vault.cropCycle?.yieldRate}%</Badge>
+            <Badge variant="success">APY: {vault?.cropCycle?.yieldRate}%</Badge>
           </div>
 
           <Input 
@@ -85,11 +93,11 @@ export const DepositModal: React.FC<DepositModalProps> = ({
           <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded-lg border border-gray-100">
             <p className="flex justify-between mb-1">
               <span>Current Balance:</span>
-              <span className="font-bold text-gray-900">${vault.balance}</span>
+              <span className="font-bold text-gray-900">${vault?.balance}</span>
             </p>
             <p className="flex justify-between">
               <span>Estimated Seasonal Yield:</span>
-              <span className="font-bold text-harvest-green-600">+${((Number(amount) || 0) * (vault.cropCycle?.yieldRate || 0) / 100).toFixed(2)}</span>
+              <span className="font-bold text-harvest-green-600">+${((Number(amount) || 0) * (vault?.cropCycle?.yieldRate || 0) / 100).toFixed(2)}</span>
             </p>
           </div>
         </Stack>
