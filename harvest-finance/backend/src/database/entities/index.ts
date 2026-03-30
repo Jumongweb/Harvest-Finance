@@ -25,3 +25,4 @@ export { Achievement, AchievementType } from './achievement.entity';
 export { Reward, RewardStatus } from './reward.entity';
 export { Notification, NotificationType } from './notification.entity';
  main
+export { AiQueryHistory } from '../ai-query-history/entities/ai-query-history.entity';

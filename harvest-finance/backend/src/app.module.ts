@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AiQueryHistoryModule } from './ai-query-history/ai-query-history.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CacheModule } from '@nestjs/cache-manager';
@@ -47,11 +48,13 @@ import { CreateFarmVaults1700000000008 } from './database/migrations/17000000000
 
 @Module({
   imports: [
+    AiQueryHistoryModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),
     TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
+      imports: [
+    AiQueryHistoryModule,ConfigModule],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
         host: configService.get<string>('DB_HOST'),
