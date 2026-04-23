@@ -21,10 +21,13 @@ interface DepositModalVault {
   name: string;
   asset: string;
   walletBalance: string;
-  tvl: string;
+  tvl: number | string;
   balance?: number | string;
+  apy?: number;
   cropCycle?: { yieldRate: number };
 }
+
+
 
 interface DepositModalProps {
   isOpen: boolean;
@@ -107,8 +110,9 @@ export const DepositModal: React.FC<DepositModalProps> = ({
               <h4 className="font-bold text-gray-900">{vault?.name}</h4>
             </div>
             <Badge variant="success">
-              APY: {vault?.cropCycle?.yieldRate ?? 0}%
+              APY: {vault?.apy ?? vault?.cropCycle?.yieldRate ?? 0}%
             </Badge>
+
           </div>
 
           <Input
@@ -134,10 +138,11 @@ export const DepositModal: React.FC<DepositModalProps> = ({
               <span className="font-bold text-harvest-green-600">
                 +$
                 {(
-                  ((Number(amount) || 0) * (vault?.cropCycle?.yieldRate || 0)) /
+                  ((Number(amount) || 0) * (vault?.apy ?? vault?.cropCycle?.yieldRate ?? 0)) /
                   100
                 ).toFixed(2)}
               </span>
+
             </p>
             <p className="mt-2 text-xs text-gray-500">
               Offline deposits will be queued automatically and synced when your

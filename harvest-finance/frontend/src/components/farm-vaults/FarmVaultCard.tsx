@@ -65,13 +65,13 @@ export function FarmVaultCard({
           </div>
           <div className="relative z-10 flex items-start justify-between">
             <Stack gap="xs">
-              <Badge variant="secondary" className="text-white border-white/30 bg-white/10">
               <Badge
-                variant="default"
+                variant="primary"
                 className="border-white/30 bg-white/10 text-white"
               >
                 {vault.cropCycle.name}
               </Badge>
+
               <h3 className="text-xl font-bold">{vault.name}</h3>
             </Stack>
             <div className="text-right">

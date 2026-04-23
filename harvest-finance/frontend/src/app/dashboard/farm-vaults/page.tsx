@@ -310,11 +310,8 @@ export default function FarmVaultsPage() {
             )}
 
             {/* Seasonal Info */}
-            <Card variant="outlined" className="bg-amber-50 border-amber-100">
-              <CardHeader 
-                title="Seasonal Tips"
-              />
             <Card variant="outlined" className="border-amber-100 bg-amber-50">
+
               <CardHeader title="Seasonal Tips" />
               <CardBody>
                 <Stack gap="md">

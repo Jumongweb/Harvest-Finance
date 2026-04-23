@@ -1,39 +1,46 @@
-"use client";
+'use client';
 
-import React, { useEffect } from "react";
-import { VaultOverview } from "@/components/dashboard/VaultOverview";
-import { CropInsurancePanel } from "@/components/dashboard/CropInsurancePanel";
-import { SeasonalTipsList, MilestoneNotification } from "@/components/seasonal-tips";
-import React, { useEffect, useMemo, useState } from "react";
-import { AIAssistantChat } from "@/components/ai-assistant";
-import { ConnectivityBanner } from "@/components/dashboard/ConnectivityBanner";
-import { CropRecommendationPanel } from "@/components/dashboard/CropRecommendationPanel";
-import { FarmActivityMap } from "@/components/dashboard/FarmActivityMap";
-import { VaultOverview } from "@/components/dashboard/VaultOverview";
-import { VaultActivityFeed } from "@/components/dashboard/VaultActivityFeed";
-import { WeatherWidget } from "@/components/dashboard/WeatherWidget";
-import {
-  MilestoneNotification,
-  SeasonalTipsList,
-} from "@/components/seasonal-tips";
-import { useAIAssistantStore } from "@/hooks/useAIAssistant";
-import { Badge, Button, Card, CardBody } from "@/components/ui";
-import {
-  enqueueOfflineAction,
-  loadDashboardSnapshot,
-  loadOfflineQueue,
-  removeOfflineAction,
-  saveDashboardSnapshot,
-} from "@/lib/offline-support";
-import { useAuthStore } from "@/lib/stores/auth-store";
-import {
-  Bot,
-  Database,
-  Leaf,
-  RefreshCcw,
-  TrendingUp,
-  Wallet,
-} from "lucide-react";
+import React, { useEffect, useMemo, useState } from 'react';
+import { 
+  Bot, 
+  Database, 
+  Leaf, 
+  RefreshCcw, 
+  TrendingUp, 
+  Wallet 
+} from 'lucide-react';
+import { 
+  Badge, 
+  Button, 
+  Card, 
+  CardBody 
+} from '@/components/ui';
+
+import { AIAssistantChat } from '@/components/ai-assistant';
+import { 
+  VaultOverview, 
+  VaultActivityFeed, 
+  ConnectivityBanner, 
+  CropRecommendationPanel, 
+  FarmActivityMap, 
+  WeatherWidget, 
+  CropInsurancePanel 
+} from '@/components/dashboard';
+
+import { 
+  MilestoneNotification, 
+  SeasonalTipsList 
+} from '@/components/seasonal-tips';
+
+import { useAIAssistantStore } from '@/hooks/useAIAssistant';
+import { useAuthStore } from '@/lib/stores/auth-store';
+import { 
+  enqueueOfflineAction, 
+  loadDashboardSnapshot, 
+  loadOfflineQueue, 
+  removeOfflineAction, 
+  saveDashboardSnapshot 
+} from '@/lib/offline-support';
 
 const defaultTransactions = [
   {
@@ -64,9 +71,7 @@ export default function DashboardPage() {
   const { token } = useAuthStore();
   const [isOnline, setIsOnline] = useState(true);
   const [queuedActions, setQueuedActions] = useState(0);
-  const [snapshotUpdatedAt, setSnapshotUpdatedAt] = useState<string | null>(
-    null,
-  );
+  const [snapshotUpdatedAt, setSnapshotUpdatedAt] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
@@ -117,9 +122,7 @@ export default function DashboardPage() {
   }, [queuedActions, snapshot]);
 
   const syncQueuedActions = async () => {
-    if (!navigator.onLine) {
-      return;
-    }
+    if (!navigator.onLine) return;
 
     setIsSyncing(true);
     const pendingActions = loadOfflineQueue();
@@ -133,9 +136,7 @@ export default function DashboardPage() {
             body: JSON.stringify(action.payload),
           });
 
-          if (!response.ok) {
-            continue;
-          }
+          if (!response.ok) continue;
 
           const body = await response.json();
           useAIAssistantStore.setState((state) => ({
@@ -166,9 +167,7 @@ export default function DashboardPage() {
             body: JSON.stringify(action.payload),
           });
 
-          if (!response.ok) {
-            continue;
-          }
+          if (!response.ok) continue;
         }
 
         removeOfflineAction(action.id);

@@ -1,71 +1,89 @@
 "use client";
 
 import React, { useCallback, useState } from "react";
-import { Container, Section } from "@/components/ui";
+import { Container, Section, Button, Inline, Stack, cn } from "@/components/ui";
 import { DepositModal } from "@/components/dashboard/DepositModal";
 import { MilestoneConfetti } from "@/components/dashboard/MilestoneConfetti";
 import { ProgressBar } from "@/components/dashboard/ProgressBar";
 import { VaultCard } from "@/components/dashboard/VaultCard";
+import { VaultTable } from "@/components/dashboard/VaultTable";
 import { WithdrawModal } from "@/components/dashboard/WithdrawModal";
 import { Footer } from "@/components/landing/Footer";
 import { Header } from "@/components/landing/Header";
 import { useMilestones } from "@/hooks/useMilestones";
 import { calculateProgress, getAchievedMilestones } from "@/lib/milestones";
-import { Coins, Leaf, Shield, Zap } from "lucide-react";
+import { formatCurrency, formatPercentage } from "@/lib/vault-utils";
+import { Vault } from "@/types/vault";
+import { Coins, Leaf, Shield, Zap, LayoutGrid, List } from "lucide-react";
 
-const MOCK_VAULTS = [
+const MOCK_VAULTS: Vault[] = [
   {
     id: "1",
     name: "Stellar USDC Yield",
     asset: "USDC",
-    apy: "8.5%",
-    tvl: "$12.4M",
+    apy: 8.5,
+    tvl: 12400000,
+    riskLevel: "Low",
     balance: "1250.00",
     walletBalance: "5000.00",
-    icon: <Coins className="w-6 h-6" />,
+    iconName: "Coins",
     seasonalTarget: 5000,
   },
   {
     id: "2",
     name: "XLM Alpha Vault",
     asset: "XLM",
-    apy: "12.2%",
-    tvl: "$8.1M",
+    apy: 12.2,
+    tvl: 8100000,
+    riskLevel: "Medium",
     balance: "0.00",
     walletBalance: "12,450.00",
-    icon: <Zap className="w-6 h-6" />,
+    iconName: "Zap",
     seasonalTarget: 10000,
   },
   {
     id: "3",
     name: "Eco-Farm Governance",
     asset: "HRVST",
-    apy: "24.5%",
-    tvl: "$4.2M",
+    apy: 24.5,
+    tvl: 4200000,
+    riskLevel: "Low",
     balance: "450.00",
     walletBalance: "1,200.00",
-    icon: <Leaf className="w-6 h-6" />,
+    iconName: "Leaf",
     seasonalTarget: 2000,
   },
   {
     id: "4",
     name: "Stable-Harvest Plus",
     asset: "yUSDC",
-    apy: "6.8%",
-    tvl: "$25.9M",
+    apy: 6.8,
+    tvl: 25900000,
+    riskLevel: "Low",
     balance: "10000.00",
     walletBalance: "2500.00",
-    icon: <Shield className="w-6 h-6" />,
+    iconName: "Shield",
     seasonalTarget: 20000,
   },
 ];
+
+const getVaultIcon = (iconName: string | undefined) => {
+  switch (iconName) {
+    case "Coins": return <Coins className="w-6 h-6" />;
+    case "Zap": return <Zap className="w-6 h-6" />;
+    case "Leaf": return <Leaf className="w-6 h-6" />;
+    case "Shield": return <Shield className="w-6 h-6" />;
+    default: return <Coins className="w-6 h-6" />;
+  }
+};
+
 
 function VaultWithProgress({
   vault,
   onDeposit,
   onWithdraw,
 }: {
-  vault: (typeof MOCK_VAULTS)[number];
+  vault: Vault;
   onDeposit: (vaultId: string) => void;
   onWithdraw: (vaultId: string) => void;
 }) {
@@ -75,7 +93,14 @@ function VaultWithProgress({
 
   return (
     <div className="space-y-0">
-      <VaultCard {...vault} onDeposit={onDeposit} onWithdraw={onWithdraw} />
+      <VaultCard 
+        {...vault} 
+        apy={formatPercentage(vault.apy)} 
+        tvl={formatCurrency(vault.tvl)} 
+        icon={getVaultIcon(vault.iconName)}
+        onDeposit={onDeposit} 
+        onWithdraw={onWithdraw} 
+      />
       <div className="px-4 py-4 -mt-1 bg-white dark:bg-zinc-950 border border-t-0 border-gray-100 dark:border-zinc-800 rounded-b-xl">
         <ProgressBar
           progress={progress}
@@ -90,12 +115,11 @@ function VaultWithProgress({
 }
 
 export default function VaultsPage() {
-  const [selectedVault, setSelectedVault] = useState<
-    (typeof MOCK_VAULTS)[number] | null
-  >(null);
+  const [selectedVault, setSelectedVault] = useState<Vault | null>(null);
   const [isDepositOpen, setIsDepositOpen] = useState(false);
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [vaultBalances, setVaultBalances] = useState<Record<string, number>>(
     () => {
       const map: Record<string, number> = {};
@@ -160,10 +184,17 @@ export default function VaultsPage() {
     [vaultBalances, milestoneHooks],
   );
 
-  const vaultsWithBalances = MOCK_VAULTS.map((vault) => ({
-    ...vault,
-    balance: (vaultBalances[vault.id] ?? 0).toFixed(2),
-  }));
+  const vaultsWithBalances = MOCK_VAULTS.map((vault) => {
+    const balanceNum = vaultBalances[vault.id] ?? 0;
+    return {
+      ...vault,
+      balance: balanceNum.toFixed(2),
+      projections: {
+        progressPercentage: calculateProgress(balanceNum, vault.seasonalTarget),
+      },
+    };
+  });
+
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 flex flex-col">
@@ -172,45 +203,70 @@ export default function VaultsPage() {
       <main className="flex-1 pt-24 pb-16">
         <Section paddingY="lg">
           <Container size="lg">
-            <div className="mb-10">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-zinc-50 mb-2">
-                Smart Farm Vaults
-              </h1>
-              <p className="text-gray-600 dark:text-zinc-400">
-                Deposit your assets into automated yield-generating strategies.
-                Track your seasonal progress and hit milestones.
-              </p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+              <div className="max-w-2xl">
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-zinc-50 mb-2">
+                  Smart Farm Vaults
+                </h1>
+                <p className="text-gray-600 dark:text-zinc-400">
+                  Deposit your assets into automated yield-generating strategies.
+                  Track your seasonal progress and hit milestones.
+                </p>
+              </div>
+              
+              <div className="flex items-center bg-gray-100 dark:bg-zinc-900 p-1 rounded-lg self-start">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all",
+                    viewMode === 'grid' 
+                      ? "bg-white dark:bg-zinc-800 text-harvest-green-600 shadow-sm" 
+                      : "text-gray-500 hover:text-gray-700 dark:hover:text-zinc-300"
+                  )}
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                  <span>Grid</span>
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all",
+                    viewMode === 'list' 
+                      ? "bg-white dark:bg-zinc-800 text-harvest-green-600 shadow-sm" 
+                      : "text-gray-500 hover:text-gray-700 dark:hover:text-zinc-300"
+                  )}
+                >
+                  <List className="w-4 h-4" />
+                  <span>List</span>
+                </button>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {vaultsWithBalances.map((vault) => (
-                <VaultWithProgress
-                  key={vault.id}
-                  vault={vault}
-                  onDeposit={handleDepositClick}
-                  onWithdraw={handleWithdrawClick}
-                />
-              ))}
-            </div>
+            {viewMode === 'grid' ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {vaultsWithBalances.map((vault) => (
+                  <VaultWithProgress
+                    key={vault.id}
+                    vault={vault as any}
+                    onDeposit={handleDepositClick}
+                    onWithdraw={handleWithdrawClick}
+                  />
+                ))}
+              </div>
+            ) : (
+              <VaultTable 
+                vaults={vaultsWithBalances as any} 
+                onDeposit={handleDepositClick} 
+                onWithdraw={handleWithdrawClick} 
+              />
+            )}
+
           </Container>
         </Section>
       </main>
 
       <Footer />
       
-      <DepositModal 
-        isOpen={isDepositOpen} 
-        onClose={() => setIsDepositOpen(false)} 
-        vault={selectedVault} 
-        onSuccess={() => undefined}
-      />
-      
-      <WithdrawModal 
-        isOpen={isWithdrawOpen} 
-        onClose={() => setIsWithdrawOpen(false)} 
-        vault={selectedVault} 
-        onSuccess={() => undefined}
-
       {selectedVault && (
         <>
           <DepositModal
@@ -227,6 +283,7 @@ export default function VaultsPage() {
           />
         </>
       )}
+
 
       <MilestoneConfetti
         trigger={showConfetti}

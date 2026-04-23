@@ -40,10 +40,11 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
       return;
     }
 
-    if (Number(amount) > vault.balance) {
+    if (Number(amount) > (Number(vault?.balance) || 0)) {
       setError("Insufficient balance in vault");
       return;
     }
+
 
     setIsLoading(true);
     setError(null);
@@ -79,7 +80,7 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
     }
   };
 
-  const isEarlyWithrawal = (vault.projections?.progressPercentage || 0) < 100;
+  const isEarlyWithrawal = (vault?.projections?.progressPercentage || 0) < 100;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="md">
@@ -91,12 +92,13 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
               <p className="text-xs font-semibold uppercase tracking-wider text-red-700">
                 From Vault
               </p>
-              <h4 className="font-bold text-gray-900">{vault.name}</h4>
+              <h4 className="font-bold text-gray-900">{vault?.name}</h4>
             </div>
             <Badge variant="error">
-              {vault.projections?.progressPercentage}% Season
+              {vault?.projections?.progressPercentage ?? 0}% Season
             </Badge>
           </div>
+
 
           <Input
             label="Amount (USD)"
@@ -112,8 +114,9 @@ export const WithdrawModal: React.FC<WithdrawModalProps> = ({
           <div className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-sm text-gray-500">
             <p className="mb-1 flex justify-between">
               <span>Available Balance:</span>
-              <span className="font-bold text-gray-900">${vault.balance}</span>
+              <span className="font-bold text-gray-900">${vault?.balance ?? '0.00'}</span>
             </p>
+
             <p className="mt-2 text-xs text-gray-500">
               Offline withdrawals will stay queued locally until the platform
               reconnects.

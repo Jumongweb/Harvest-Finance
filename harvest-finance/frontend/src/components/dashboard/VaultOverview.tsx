@@ -13,8 +13,7 @@ const mockVaults: VaultProps[] = [
     tvl: "$1.2M",
     balance: "$4,280.00",
     walletBalance: "$1,120.00",
-    balance: "2,450",
-    walletBalance: "5,300",
+
     icon: <Database className="w-5 h-5" />,
     onDeposit: () => undefined,
     onWithdraw: () => undefined,
@@ -27,8 +26,7 @@ const mockVaults: VaultProps[] = [
     tvl: "$4.5M",
     balance: "$2,920.00",
     walletBalance: "$540.00",
-    balance: "0.85",
-    walletBalance: "1.42",
+
     icon: <Coins className="w-5 h-5" />,
     onDeposit: () => undefined,
     onWithdraw: () => undefined,
@@ -68,11 +66,7 @@ const mockVaults: VaultProps[] = [
     icon: <Database className="w-5 h-5" />,
     onDeposit: () => undefined,
     onWithdraw: () => undefined,
-    balance: "184",
-    walletBalance: "420",
-    icon: <TrendingUp className="w-5 h-5" />,
-    onDeposit: () => undefined,
-    onWithdraw: () => undefined,
+
   },
 ];
 
