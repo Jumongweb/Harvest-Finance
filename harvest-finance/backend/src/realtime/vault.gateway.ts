@@ -11,10 +11,13 @@ import {
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
 
+export type VaultActivityType = 'deposit' | 'withdrawal' | 'harvest' | 'milestone' | 'ai_insight';
+
 export interface VaultActivityEvent {
-  type: 'deposit' | 'withdrawal' | 'milestone' | 'ai_insight';
+  type: VaultActivityType;
   vaultId: string;
   vaultName: string;
+  asset?: string;
   amount?: number;
   userId?: string;
   milestone?: string;
@@ -71,11 +74,13 @@ export class VaultGateway
     this.server.to(`vault:${event.vaultId}`).emit('vault:activity', event);
     // Also broadcast to all connected clients for the global activity feed
     this.server.emit('vault:activity:global', event);
+    this.logger.debug(`Emitted ${event.type} event for vault ${event.vaultId}`);
   }
 
   emitDeposit(data: {
     vaultId: string;
     vaultName: string;
+    asset?: string;
     amount: number;
     userId: string;
     newBalance: number;
@@ -84,6 +89,7 @@ export class VaultGateway
       type: 'deposit',
       vaultId: data.vaultId,
       vaultName: data.vaultName,
+      asset: data.asset,
       amount: data.amount,
       userId: data.userId,
       newBalance: data.newBalance,
@@ -95,6 +101,7 @@ export class VaultGateway
   emitWithdrawal(data: {
     vaultId: string;
     vaultName: string;
+    asset?: string;
     amount: number;
     userId: string;
     newBalance: number;
@@ -103,9 +110,29 @@ export class VaultGateway
       type: 'withdrawal',
       vaultId: data.vaultId,
       vaultName: data.vaultName,
+      asset: data.asset,
       amount: data.amount,
       userId: data.userId,
       newBalance: data.newBalance,
+      timestamp: new Date().toISOString(),
+    };
+    this.emitVaultActivity(event);
+  }
+
+  emitHarvest(data: {
+    vaultId: string;
+    vaultName: string;
+    asset?: string;
+    amount: number;
+    userId: string;
+  }) {
+    const event: VaultActivityEvent = {
+      type: 'harvest',
+      vaultId: data.vaultId,
+      vaultName: data.vaultName,
+      asset: data.asset,
+      amount: data.amount,
+      userId: data.userId,
       timestamp: new Date().toISOString(),
     };
     this.emitVaultActivity(event);
