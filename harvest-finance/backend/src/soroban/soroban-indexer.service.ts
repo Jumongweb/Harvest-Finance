@@ -201,7 +201,7 @@ export class SorobanIndexerService implements OnModuleInit {
       .createQueryBuilder()
       .insert()
       .into(SorobanEvent)
-      .values(entities)
+      .values(entities as any)
       .orIgnore()
       .execute();
     return result.identifiers.filter((id) => id !== undefined).length;

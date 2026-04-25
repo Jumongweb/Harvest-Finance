@@ -34,11 +34,9 @@ import {
 
 import { useAIAssistantStore } from '@/hooks/useAIAssistant';
 import { useAuthStore } from '@/lib/stores/auth-store';
+import { useSync } from '@/hooks/useSync';
 import { 
-  enqueueOfflineAction, 
   loadDashboardSnapshot, 
-  loadOfflineQueue, 
-  removeOfflineAction, 
   saveDashboardSnapshot 
 } from '@/lib/offline-support';
 
@@ -47,7 +45,7 @@ const defaultTransactions = [
     id: "tx-1",
     type: "Deposit",
     amount: 250,
-    status: "Pending sync",
+    status: "Synced",
     createdAt: "2026-03-29T07:30:00.000Z",
   },
   {
@@ -57,22 +55,13 @@ const defaultTransactions = [
     status: "Completed",
     createdAt: "2026-03-28T12:15:00.000Z",
   },
-  {
-    id: "tx-3",
-    type: "Withdraw",
-    amount: 90,
-    status: "Completed",
-    createdAt: "2026-03-27T16:45:00.000Z",
-  },
 ];
 
 export default function DashboardPage() {
   const openChat = useAIAssistantStore((state) => state.openChat);
   const { token } = useAuthStore();
-  const [isOnline, setIsOnline] = useState(true);
-  const [queuedActions, setQueuedActions] = useState(0);
+  const { isOnline, isSyncing, queuedCount, sync, queueAction } = useSync();
   const [snapshotUpdatedAt, setSnapshotUpdatedAt] = useState<string | null>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     openChat();
@@ -81,20 +70,6 @@ export default function DashboardPage() {
   useEffect(() => {
     const snapshot = loadDashboardSnapshot();
     setSnapshotUpdatedAt(snapshot?.updatedAt ?? null);
-    setQueuedActions(loadOfflineQueue().length);
-    setIsOnline(typeof navigator === "undefined" ? true : navigator.onLine);
-
-    const handleStatusChange = () => {
-      setIsOnline(navigator.onLine);
-      setQueuedActions(loadOfflineQueue().length);
-    };
-
-    window.addEventListener("online", handleStatusChange);
-    window.addEventListener("offline", handleStatusChange);
-    return () => {
-      window.removeEventListener("online", handleStatusChange);
-      window.removeEventListener("offline", handleStatusChange);
-    };
   }, []);
 
   const snapshot = useMemo(() => {
@@ -104,87 +79,22 @@ export default function DashboardPage() {
         vaultBalance: 18240,
         totalDeposits: 14750,
         totalRewards: 3490,
-        queuedActions,
+        queuedActions: 0,
         activeVaults: 4,
         recentTransactions: defaultTransactions,
       }
     );
-  }, [queuedActions]);
+  }, []);
 
   useEffect(() => {
     const updatedAt = new Date().toISOString();
     saveDashboardSnapshot({
       ...snapshot,
-      queuedActions,
+      queuedActions: queuedCount,
       updatedAt,
     });
     setSnapshotUpdatedAt(updatedAt);
-  }, [queuedActions, snapshot]);
-
-  const syncQueuedActions = async () => {
-    if (!navigator.onLine) return;
-
-    setIsSyncing(true);
-    const pendingActions = loadOfflineQueue();
-
-    for (const action of pendingActions) {
-      try {
-        if (action.type === "ai-query") {
-          const response = await fetch(action.endpoint, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(action.payload),
-          });
-
-          if (!response.ok) continue;
-
-          const body = await response.json();
-          useAIAssistantStore.setState((state) => ({
-            messages: [
-              ...state.messages,
-              {
-                id: `assistant-sync-${Date.now()}-${action.id}`,
-                role: "assistant",
-                content: body.message,
-                timestamp: new Date(),
-                suggestions: body.suggestions,
-              },
-            ],
-            suggestions: body.suggestions || state.suggestions,
-          }));
-        } else {
-          const headers: Record<string, string> = {
-            "Content-Type": "application/json",
-          };
-
-          if (token) {
-            headers.Authorization = `Bearer ${token}`;
-          }
-
-          const response = await fetch(action.endpoint, {
-            method: "POST",
-            headers,
-            body: JSON.stringify(action.payload),
-          });
-
-          if (!response.ok) continue;
-        }
-
-        removeOfflineAction(action.id);
-      } catch {
-        continue;
-      }
-    }
-
-    setQueuedActions(loadOfflineQueue().length);
-    setIsSyncing(false);
-  };
-
-  useEffect(() => {
-    if (isOnline && loadOfflineQueue().length > 0) {
-      void syncQueuedActions();
-    }
-  }, [isOnline]);
+  }, [queuedCount, snapshot]);
 
   const aiContext = {
     selectedCrop: "Maize",
@@ -223,13 +133,12 @@ export default function DashboardPage() {
     },
   ];
 
-  const queueDepositDemo = () => {
-    enqueueOfflineAction({
-      type: "deposit",
-      endpoint: "http://localhost:3001/api/v1/farm-vaults/vault-1/deposit",
-      payload: { amount: 150 },
-    });
-    setQueuedActions(loadOfflineQueue().length);
+  const queueDepositDemo = async () => {
+    await queueAction(
+      "http://localhost:3001/api/v1/vaults/vault-1/deposit",
+      "POST",
+      { amount: 150 }
+    );
   };
 
   return (
@@ -251,7 +160,8 @@ export default function DashboardPage() {
           <Button
             variant="outline"
             leftIcon={<RefreshCcw className="h-4 w-4" />}
-            onClick={syncQueuedActions}
+            onClick={sync}
+            isLoading={isSyncing}
             className="text-sm"
           >
             Refresh sync
@@ -269,10 +179,10 @@ export default function DashboardPage() {
 
       <ConnectivityBanner
         isOnline={isOnline}
-        queuedActions={queuedActions}
+        queuedActions={queuedCount}
         lastUpdated={snapshotUpdatedAt}
         isSyncing={isSyncing}
-        onSync={syncQueuedActions}
+        onSync={sync}
       />
 
       <WeatherWidget />
@@ -303,85 +213,71 @@ export default function DashboardPage() {
                     {card.helper}
                   </p>
                 </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{card.helper}</p>
               </CardBody>
             </Card>
           );
         })}
       </div>
 
-      <SeasonalTipsList showFilters />
-      <CropRecommendationPanel isOnline={isOnline} />
-
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.95fr)]">
-  <div className="space-y-6">
-    <FarmActivityMap />
-    <VaultOverview />
-  </div>
-  <div className="space-y-6">
-    <Card variant="default" className="h-fit">
-      <CardBody className="space-y-5 p-4 md:p-6">
-        <div>
-          <h2 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white">
-            Recent vault activity
-          </h2>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Cached locally so the latest dashboard view remains visible
-            offline.
-          </p>
+        <div className="space-y-6">
+          <CropRecommendationPanel isOnline={isOnline} />
+          <FarmActivityMap />
+          <VaultOverview />
         </div>
-        <div className="space-y-3">
-          {snapshot.recentTransactions.map((transaction) => (
-            <div
-              key={transaction.id}
-              className="flex items-center justify-between rounded-2xl border border-gray-200 dark:border-[rgba(141,187,85,0.15)] bg-gray-50 dark:bg-[#1a3020] px-3 md:px-4 py-3"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="font-medium text-gray-900 dark:text-white truncate">
-                  {transaction.type}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {new Date(transaction.createdAt).toLocaleString()}
+        <div className="space-y-6">
+          <Card variant="default" className="h-fit">
+            <CardBody className="space-y-5 p-4 md:p-6">
+              <div>
+                <h2 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white">
+                  Recent vault activity
+                </h2>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Cached locally so the latest dashboard view remains visible
+                  offline.
                 </p>
               </div>
-              <div className="text-right ml-2">
-                <p className="font-semibold text-gray-900 dark:text-white">
-                  ${transaction.amount}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {transaction.status}
-                </p>
+              <div className="space-y-3">
+                {snapshot.recentTransactions.map((transaction) => (
+                  <div
+                    key={transaction.id}
+                    className="flex items-center justify-between rounded-2xl border border-gray-200 dark:border-[rgba(141,187,85,0.15)] bg-gray-50 dark:bg-[#1a3020] px-3 md:px-4 py-3"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-gray-900 dark:text-white truncate">
+                        {transaction.type}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {new Date(transaction.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="text-right ml-2">
+                      <p className="font-semibold text-gray-900 dark:text-white">
+                        ${transaction.amount}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {transaction.status}
+                      </p>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-          ))}
+            </CardBody>
+          </Card>
+          <CropInsurancePanel />
         </div>
-      </CardBody>
-    </Card>
-  </div>
-</div>
+      </div>
 
-     {/* Additional Sections */}
-<div className="space-y-6">
-  <div className="border-t border-gray-200 dark:border-[rgba(141,187,85,0.12)] pt-4">
-    <VaultOverview />
-  </div>
+      <div className="space-y-6">
+        <div className="border-t border-gray-200 dark:border-[rgba(141,187,85,0.12)] pt-6">
+          <VaultActivityFeed />
+        </div>
 
-  <div className="border-t border-gray-200 dark:border-[rgba(141,187,85,0.12)] pt-4">
-    <VaultActivityFeed />
-  </div>
+        <div className="border-t border-gray-200 dark:border-[rgba(141,187,85,0.12)] pt-6">
+          <SeasonalTipsList showFilters />
+        </div>
+      </div>
 
-  <div className="border-t border-gray-200 dark:border-[rgba(141,187,85,0.12)] pt-6">
-    <CropInsurancePanel />
-  </div>
-
-  <div className="border-t border-gray-200 dark:border-[rgba(141,187,85,0.12)] pt-6">
-    <SeasonalTipsList showFilters />
-  </div>
-
-  <div className="border-t border-gray-200 dark:border-[rgba(141,187,85,0.12)] pt-6">
-    <CropRecommendationPanel isOnline={isOnline} />
-  </div>
-</div>
       {/* AI Assistant */}
       <AIAssistantChat context={aiContext} />
     </div>

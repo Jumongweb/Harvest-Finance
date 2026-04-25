@@ -33,7 +33,11 @@
     "risk_level": "Matakin Hadari",
     "strategy": "Dabara",
     "actions": "Ayyuka",
-    "no_vaults_found": "Ba a sami taskoki ba."
+    "no_vaults_found": "Ba a sami taskoki ba.",
+    "advisory_weather": "Yanayi",
+    "advisory_market": "Kasuwa",
+    "advisory_soil": "Kasa",
+    "advisory_impact": "Tasiri"
   },
   "sidebar": {
     "dashboard": "Dashboard",

@@ -666,7 +666,7 @@ export class StellarService {
     async getRecommendedPriorityFee(percentile: number = 90): Promise<PriorityFeeInfo> {
         try {
             const stats = await this.server.feeStats();
-            const pStats = stats.fee_charged;
+            const pStats = stats.fee_charged as any;
             
             let recommendedStroops = parseInt(pStats.mode, 10);
             if (percentile <= 10) recommendedStroops = parseInt(pStats.p10, 10);
@@ -732,7 +732,7 @@ export class StellarService {
             return {
                 feeBumpTransactionHash: response.hash,
                 innerTransactionHash: innerTx.hash().toString('hex'),
-                feeCharged: this.stroopsToXlm(response.fee_charged),
+                feeCharged: this.stroopsToXlm((response as any).fee_charged),
                 ledger: response.ledger,
                 createdAt: new Date(),
             };

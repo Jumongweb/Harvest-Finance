@@ -6,6 +6,8 @@ const DYNAMIC_CACHE = 'harvest-dynamic-v1';
 const STATIC_ASSETS = [
   '/',
   '/dashboard',
+  '/vaults',
+  '/portfolio',
   '/manifest.json',
   '/favicon.svg',
   '/icons/icon.svg',
@@ -15,7 +17,8 @@ const API_ROUTES = [
   '/api/v1/vaults',
   '/api/v1/transactions',
   '/api/v1/farm-vaults',
-  '/api/v1/ai-assistant/recommend',
+  '/api/v1/farm-intelligence/recommendations',
+  '/api/v1/users/me',
 ];
 
 self.addEventListener('install', (event) => {
@@ -45,15 +48,25 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
 
   if (request.method !== 'GET') {
-    event.respondWith(
-      fetch(request).catch(() => {
-        return new Response(JSON.stringify({ error: 'offline', queued: true }), {
-          status: 202,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      })
-    );
-    return;
+    // Only queue specific POST routes for background sync
+    const syncableRoutes = ['/api/v1/vaults/', '/api/v1/farm-vaults/'];
+    const isSyncable = syncableRoutes.some(route => url.pathname.includes(route));
+
+    if (isSyncable) {
+      event.respondWith(
+        fetch(request.clone()).catch(() => {
+          return new Response(JSON.stringify({ 
+            error: 'offline', 
+            queued: true,
+            message: 'You are offline. Your action has been queued and will sync automatically.'
+          }), {
+            status: 202,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        })
+      );
+      return;
+    }
   }
 
   if (url.pathname.startsWith('/api/')) {

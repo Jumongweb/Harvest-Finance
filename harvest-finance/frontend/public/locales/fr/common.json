@@ -33,7 +33,11 @@
     "risk_level": "Niveau de Risque",
     "strategy": "Stratégie",
     "actions": "Actions",
-    "no_vaults_found": "Aucun coffre trouvé."
+    "no_vaults_found": "Aucun coffre trouvé.",
+    "advisory_weather": "Météo",
+    "advisory_market": "Marché",
+    "advisory_soil": "Sol",
+    "advisory_impact": "Impact"
   },
   "sidebar": {
     "dashboard": "Tableau de bord",

@@ -51,7 +51,23 @@ export class VaultsService {
     vaultId: string,
     depositDto: DepositDto,
   ): Promise<DepositVaultResponseDto> {
-    const { userId, amount } = depositDto;
+    const { userId, amount, idempotencyKey } = depositDto;
+    
+    if (idempotencyKey) {
+      const existingDeposit = await this.depositRepository.findOne({
+        where: { idempotencyKey, userId },
+        relations: ['vault'],
+      });
+      if (existingDeposit) {
+        this.logger.log(`Duplicate deposit detected with idempotencyKey: ${idempotencyKey}`, 'VaultsService');
+        const userTotalDeposits = await this.getUserTotalDeposits(userId);
+        return {
+          vault: existingDeposit.vault ? this.mapVaultToResponse(existingDeposit.vault) : null,
+          deposit: this.mapDepositToResponse(existingDeposit),
+          userTotalDeposits,
+        };
+      }
+    }
 
     if (amount <= 0) {
       throw new BadRequestException('Deposit amount must be greater than 0');
@@ -81,6 +97,7 @@ export class VaultsService {
       transactionHash: null,
       stellarTransactionId: null,
       confirmedAt: null,
+      idempotencyKey: idempotencyKey || null,
     });
 
     const result = await this.dataSource.transaction(async (manager) => {

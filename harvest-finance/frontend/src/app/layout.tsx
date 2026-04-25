@@ -5,6 +5,7 @@ import { I18nInitializer } from "@/components/layout/I18nInitializer";
 import { MilestoneToastContainer } from "@/components/dashboard/MilestoneToast";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { ServiceWorkerRegistration } from "@/components/layout/ServiceWorkerRegistration";
+import { ConnectionStatus } from "@/components/layout/ConnectionStatus";
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -69,6 +70,7 @@ export default function RootLayout({
           </a>
           {children}
           <MilestoneToastContainer />
+          <ConnectionStatus />
         </ThemeProvider>
       </body>
     </html>

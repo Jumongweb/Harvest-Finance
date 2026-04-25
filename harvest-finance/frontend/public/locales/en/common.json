@@ -33,7 +33,11 @@
     "risk_level": "Risk Level",
     "strategy": "Strategy",
     "actions": "Actions",
-    "no_vaults_found": "No vaults found."
+    "no_vaults_found": "No vaults found.",
+    "advisory_weather": "Weather",
+    "advisory_market": "Market",
+    "advisory_soil": "Soil",
+    "advisory_impact": "Impact"
   },
   "sidebar": {
     "dashboard": "Dashboard",
