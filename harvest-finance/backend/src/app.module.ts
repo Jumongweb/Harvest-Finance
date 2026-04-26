@@ -28,6 +28,8 @@ import { RealtimeModule } from './realtime/realtime.module';
 import { SorobanModule } from './soroban/soroban.module';
 import { StellarModule } from './stellar/stellar.module';
 import { VerificationModule } from './verification/verification.module';
+import { CommunityModule } from './community/community.module';
+import { CoopMarketplaceModule } from './coop-marketplace/coop-marketplace.module';
 import {
   Achievement,
   CreditScore,
@@ -44,6 +46,14 @@ import {
   Verification,
   Withdrawal,
 } from './database/entities';
+import { CommunityPost } from './database/entities/community-post.entity';
+import { CommunityComment } from './database/entities/community-comment.entity';
+import { PostReaction } from './database/entities/post-reaction.entity';
+import { CommunityGroup } from './database/entities/community-group.entity';
+import { GroupMembership } from './database/entities/group-membership.entity';
+import { CoopListing } from './database/entities/coop-listing.entity';
+import { CoopOrder } from './database/entities/coop-order.entity';
+import { CoopReview } from './database/entities/coop-review.entity';
 import { CropCycle } from './database/entities/crop-cycle.entity';
 import { InsurancePlan } from './database/entities/insurance-plan.entity';
 import { InsuranceSubscription } from './database/entities/insurance-subscription.entity';
@@ -56,6 +66,7 @@ import { CreateFarmVaults1700000000008 } from './database/migrations/17000000000
 import { CreateInsurance1700000000009 } from './database/migrations/1700000000009-CreateInsurance';
 import { AddInsuranceNotificationType1700000000010 } from './database/migrations/1700000000010-AddInsuranceNotificationType';
 import { CreateSorobanEvents1700000000011 } from './database/migrations/1700000000011-CreateSorobanEvents';
+import { CreateCommunityAndMarketplace1700000000012 } from './database/migrations/1700000000012-CreateCommunityAndMarketplace';
 
 @Module({
   imports: [
@@ -88,6 +99,14 @@ import { CreateSorobanEvents1700000000011 } from './database/migrations/17000000
           InsurancePlan,
           InsuranceSubscription,
           SorobanEvent,
+          CommunityPost,
+          CommunityComment,
+          PostReaction,
+          CommunityGroup,
+          GroupMembership,
+          CoopListing,
+          CoopOrder,
+          CoopReview,
         ],
         migrations: [
           CreateInitialSchema1700000000000,
@@ -99,6 +118,7 @@ import { CreateSorobanEvents1700000000011 } from './database/migrations/17000000
           CreateInsurance1700000000009,
           AddInsuranceNotificationType1700000000010,
           CreateSorobanEvents1700000000011,
+          CreateCommunityAndMarketplace1700000000012,
         ],
         synchronize: false,
         migrationsRun: false,
@@ -128,6 +148,8 @@ import { CreateSorobanEvents1700000000011 } from './database/migrations/17000000
     StellarModule,
     SorobanModule,
     PortfolioModule,
+    CommunityModule,
+    CoopMarketplaceModule,
   ],
   controllers: [AppController],
   providers: [
