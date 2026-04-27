@@ -138,6 +138,7 @@ export class VaultsService {
     this.vaultGateway.emitDeposit({
       vaultId,
       vaultName: vault.vaultName,
+      asset: vault.type,
       amount,
       userId,
       newBalance: result.vault ? Number(result.vault.totalDeposits) : 0,
@@ -302,6 +303,7 @@ export class VaultsService {
     this.vaultGateway.emitWithdrawal({
       vaultId,
       vaultName: vault.vaultName,
+      asset: vault.type,
       amount,
       userId,
       newBalance: result.vault ? Number(result.vault.totalDeposits) : 0,

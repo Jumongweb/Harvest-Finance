@@ -1,16 +1,17 @@
 import {
+  Entity,
+  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
   Entity,
   Index,
   JoinColumn,
   ManyToOne,
-  OneToMany,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
+  JoinColumn,
+  Index,
 } from 'typeorm';
-import { Deposit } from './deposit.entity';
 import { User } from './user.entity';
+import { Deposit } from './deposit.entity';
 
 export enum VaultType {
   CROP_PRODUCTION = 'CROP_PRODUCTION',
