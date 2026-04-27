@@ -1,8 +1,8 @@
-import { Injectable, Logger, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, InternalServerErrorException, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { SecretsService } from '../../common/secrets/secrets.service';
 import * as StellarSdk from 'stellar-sdk';
-import { retry } from '../../common/utils/retry';
-import { isRetryableStellarError } from '../utils/stellar-retry';
+import { CustomLoggerService } from '../../logger/custom-logger.service';
 import {
     EscrowCreateParams,
     EscrowResult,
@@ -18,17 +18,17 @@ import {
 } from '../interfaces/stellar.interfaces';
 
 @Injectable()
-export class StellarService {
+export class StellarService implements OnModuleInit {
     private readonly logger = new Logger(StellarService.name);
     private readonly server: StellarSdk.Horizon.Server;
     private readonly networkPassphrase: string;
     private readonly platformPublicKey: string;
-    private readonly platformSecretKey: string;
-    private readonly retryMaxAttempts: number;
-    private readonly retryBaseDelayMs: number;
-    private readonly retryMaxDelayMs: number;
+    private platformSecretKey: string;
 
-    constructor(private readonly configService: ConfigService) {
+    constructor(
+        private readonly configService: ConfigService,
+        private readonly secretsService: SecretsService,
+    ) {
         const network = this.configService.get<string>('STELLAR_NETWORK', 'testnet');
 
         if (network === 'mainnet') {
@@ -42,46 +42,15 @@ export class StellarService {
         }
 
         this.platformPublicKey = this.configService.getOrThrow<string>('STELLAR_PLATFORM_PUBLIC_KEY');
-        this.platformSecretKey = this.configService.getOrThrow<string>('STELLAR_PLATFORM_SECRET_KEY');
-
-        this.retryMaxAttempts = Math.max(
-            1,
-            this.configService.get<number>('STELLAR_RETRY_MAX_ATTEMPTS', 3),
-        );
-        this.retryBaseDelayMs = Math.max(
-            0,
-            this.configService.get<number>('STELLAR_RETRY_BASE_DELAY_MS', 500),
-        );
-        this.retryMaxDelayMs = Math.max(
-            this.retryBaseDelayMs,
-            this.configService.get<number>('STELLAR_RETRY_MAX_DELAY_MS', 5000),
-        );
     }
 
-    /**
-     * Submits a Stellar transaction with exponential-backoff retry on transient
-     * failures (5xx, 429, network errors). Deterministic rejections that
-     * carry Horizon `result_codes` are surfaced immediately — retrying those
-     * would only burn fees and sequence numbers.
-     */
-    private submitWithRetry(
-        transaction: StellarSdk.Transaction | StellarSdk.FeeBumpTransaction,
-        context: string,
-    ): Promise<StellarSdk.Horizon.HorizonApi.SubmitTransactionResponse> {
-        return retry(
-            () => this.server.submitTransaction(transaction),
-            {
-                maxAttempts: this.retryMaxAttempts,
-                baseDelayMs: this.retryBaseDelayMs,
-                maxDelayMs: this.retryMaxDelayMs,
-                isRetryable: isRetryableStellarError,
-                onRetry: (err, attempt, delayMs) => {
-                    this.logger.warn(
-                        `submitTransaction retry | context=${context} attempt=${attempt}/${this.retryMaxAttempts} delayMs=${delayMs} error=${(err as Error)?.message ?? 'unknown'}`,
-                    );
-                },
-            },
-        );
+    async onModuleInit() {
+        const secret = await this.secretsService.getSecret('STELLAR_PLATFORM_SECRET_KEY');
+        if (!secret) {
+            this.logger.error('Failed to load STELLAR_PLATFORM_SECRET_KEY from secrets provider');
+            throw new InternalServerErrorException('Platform secret key configuration missing');
+        }
+        this.platformSecretKey = secret;
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
@@ -632,9 +601,9 @@ export class StellarService {
         return {
             transactionHash,
             status: tx.successful ? 'success' : 'failed',
-            ledger: Number(tx.ledger),
-            createdAt: new Date(tx.created_at),
-            fee: this.stroopsToXlm(String(tx.fee_charged)),
+            ledger: tx.ledger_attr ? Number(tx.ledger_attr) : (typeof tx.ledger === 'number' || typeof tx.ledger === 'string' ? Number(tx.ledger) : 0),
+            createdAt: tx.created_at ? new Date(tx.created_at) : new Date(),
+            fee: this.stroopsToXlm(tx.fee_charged ? String(tx.fee_charged) : '0'),
             operations,
         };
         } catch (err) {
@@ -852,21 +821,52 @@ export class StellarService {
 
 
     private handleStellarError(err: any, context: string): never {
+        const status = err?.response?.status;
+
         if (err?.response?.data?.extras?.result_codes) {
-        const codes = err.response.data.extras.result_codes;
-        this.logger.error(`Stellar error in ${context}`, JSON.stringify(codes));
-        throw new BadRequestException(`Stellar transaction failed: ${JSON.stringify(codes)}`);
+            const resultCodes = err.response.data.extras.result_codes;
+            this.structuredLogger?.errorEvent(
+                'stellar_tx_failed',
+                {
+                    context,
+                    status,
+                    resultCodes,
+                    message: err?.message ?? 'unknown',
+                },
+                StellarService.name,
+            );
+            this.logger.error(
+                `Stellar error in ${context}`,
+                JSON.stringify(resultCodes),
+            );
+            throw new BadRequestException(
+                `Stellar transaction failed: ${JSON.stringify(resultCodes)}`,
+            );
         }
 
-        if (err?.response?.status === 404) {
-        throw new BadRequestException(`Stellar resource not found (context: ${context})`);
+        if (status === 404) {
+            throw new BadRequestException(
+                `Stellar resource not found (context: ${context})`,
+            );
         }
 
         if (err instanceof BadRequestException) {
-        throw err;
+            throw err;
         }
 
+        this.structuredLogger?.errorEvent(
+            'stellar_tx_failed',
+            {
+                context,
+                status,
+                message: err?.message ?? 'unknown',
+                kind: 'unexpected',
+            },
+            StellarService.name,
+        );
         this.logger.error(`Unexpected Stellar error in ${context}`, err);
-        throw new InternalServerErrorException(`Stellar network error in ${context}: ${err?.message ?? 'unknown'}`);
+        throw new InternalServerErrorException(
+            `Stellar network error in ${context}: ${err?.message ?? 'unknown'}`,
+        );
     }
 }
