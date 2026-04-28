@@ -22,6 +22,8 @@ contract Controller is Initializable, AccessControlUpgradeable, UUPSUpgradeable 
     event VaultAdded(address indexed vault);
     event StrategySet(address indexed vault, address indexed strategy);
     event OracleSet(address indexed oracle);
+    event ControllerAdminAction(address indexed admin, bytes32 indexed action, address indexed target);
+    event ControllerStrategyChanged(address indexed admin, address indexed vault, address indexed oldStrategy, address newStrategy);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -38,8 +40,13 @@ contract Controller is Initializable, AccessControlUpgradeable, UUPSUpgradeable 
 
     function setOracle(address _oracle) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(_oracle != address(0), "Controller: zero address");
+        address oldOracle = oracle;
         oracle = _oracle;
         emit OracleSet(_oracle);
+        emit ControllerAdminAction(msg.sender, keccak256("SET_ORACLE"), _oracle);
+        if (oldOracle != address(0)) {
+            emit ControllerAdminAction(msg.sender, keccak256("REPLACE_ORACLE"), oldOracle);
+        }
     }
 
     /**
@@ -50,6 +57,7 @@ contract Controller is Initializable, AccessControlUpgradeable, UUPSUpgradeable 
         require(vault != address(0), "Controller: zero address");
         vaults[vault] = true;
         emit VaultAdded(vault);
+        emit ControllerAdminAction(msg.sender, keccak256("ADD_VAULT"), vault);
     }
 
     /**
@@ -60,8 +68,10 @@ contract Controller is Initializable, AccessControlUpgradeable, UUPSUpgradeable 
     function setStrategy(address vault, address strategy) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(vaults[vault], "Controller: vault not added");
         require(strategy != address(0), "Controller: zero strategy");
+        address oldStrategy = strategies[vault];
         strategies[vault] = strategy;
         emit StrategySet(vault, strategy);
+        emit ControllerStrategyChanged(msg.sender, vault, oldStrategy, strategy);
     }
 
     /**
@@ -75,6 +85,7 @@ contract Controller is Initializable, AccessControlUpgradeable, UUPSUpgradeable 
         
         address asset = address(IVault(vault).asset());
         require(!IOracle(oracle).isStale(asset), "Controller: stale price");
+        emit ControllerAdminAction(msg.sender, keccak256("DO_HARD_WORK"), vault);
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyRole(DEFAULT_ADMIN_ROLE) {}
