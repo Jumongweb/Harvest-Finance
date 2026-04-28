@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   Body,
+  Query,
   UseGuards,
   Request,
   HttpCode,
@@ -100,5 +101,22 @@ export class VaultsController {
   @ApiResponse({ status: 200, description: 'Public vaults retrieved successfully', type: [VaultResponseDto] })
   async getPublicVaults(): Promise<VaultResponseDto[]> {
     return this.vaultsService.getPublicVaults();
+  }
+
+  @Get('metadata')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get vault metadata (names, symbols, asset pairs)' })
+  @ApiResponse({ status: 200, description: 'Vault metadata retrieved successfully' })
+  async getVaultsMetadata(): Promise<any[]> {
+    return this.vaultsService.getVaultsMetadata();
+  @Get('apy-history')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get APY history for vaults' })
+  @ApiResponse({ status: 200, description: 'APY history retrieved successfully' })
+  async getApyHistory(
+    @Query('vaultId') vaultId?: string,
+    @Query('timeRange') timeRange: string = '30d',
+  ): Promise<any[]> {
+    return this.vaultsService.getApyHistory(vaultId, timeRange);
   }
 }
