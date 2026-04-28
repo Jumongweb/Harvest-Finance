@@ -58,6 +58,8 @@ contract Vault is Initializable, IVault, ERC20Upgradeable, AccessControlUpgradea
     event VaultPaused(address indexed pauser);
     event VaultUnpaused(address indexed pauser);
     event EmergencyWithdraw(address indexed admin, address indexed token, address indexed recipient, uint256 amount);
+    event VaultAdminAction(address indexed admin, bytes32 indexed action, uint256 oldValue, uint256 newValue);
+    event VaultEmergencyAction(address indexed admin, bytes32 indexed action, address indexed target, uint256 amount);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -163,7 +165,7 @@ contract Vault is Initializable, IVault, ERC20Upgradeable, AccessControlUpgradea
 
         asset.safeTransfer(receiver, assets);
 
-        emit Withdraw(msg.sender, receiver, assets, shares);
+        emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }
 
     /**
@@ -203,7 +205,7 @@ contract Vault is Initializable, IVault, ERC20Upgradeable, AccessControlUpgradea
 
         asset.safeTransfer(receiver, assets);
 
-        emit Withdraw(msg.sender, receiver, assets, shares);
+        emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }
 
     /**
@@ -227,22 +229,26 @@ contract Vault is Initializable, IVault, ERC20Upgradeable, AccessControlUpgradea
 
     function setWithdrawalLimit(uint256 limit) external onlyRole(ADMIN_ROLE) {
         emit WithdrawalLimitUpdated(maxWithdrawalPerBlock, limit);
+        emit VaultAdminAction(msg.sender, keccak256("SET_WITHDRAWAL_LIMIT"), maxWithdrawalPerBlock, limit);
         maxWithdrawalPerBlock = limit;
     }
 
     function setDepositCap(uint256 cap) external onlyRole(ADMIN_ROLE) {
         emit DepositCapUpdated(depositCap, cap);
+        emit VaultAdminAction(msg.sender, keccak256("SET_DEPOSIT_CAP"), depositCap, cap);
         depositCap = cap;
     }
 
     function pause() external onlyRole(PAUSER_ROLE) {
         paused = true;
         emit VaultPaused(msg.sender);
+        emit VaultEmergencyAction(msg.sender, keccak256("PAUSE"), address(this), 0);
     }
 
     function unpause() external onlyRole(PAUSER_ROLE) {
         paused = false;
         emit VaultUnpaused(msg.sender);
+        emit VaultEmergencyAction(msg.sender, keccak256("UNPAUSE"), address(this), 0);
     }
 
     function emergencyWithdraw(address token, address recipient) external onlyRole(ADMIN_ROLE) {
@@ -255,6 +261,7 @@ contract Vault is Initializable, IVault, ERC20Upgradeable, AccessControlUpgradea
 
         IERC20Upgradeable(token).safeTransfer(recipient, balance);
         emit EmergencyWithdraw(msg.sender, token, recipient, balance);
+        emit VaultEmergencyAction(msg.sender, keccak256("EMERGENCY_WITHDRAW"), token, balance);
     }
 
     // --- View Functions ---

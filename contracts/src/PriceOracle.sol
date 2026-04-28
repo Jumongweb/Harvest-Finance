@@ -19,14 +19,18 @@ contract PriceOracle is IOracle, Ownable {
 
     event PriceUpdated(address indexed asset, uint256 price, uint256 updatedAt);
     event StaleThresholdUpdated(uint256 oldThreshold, uint256 newThreshold);
+    event OracleAdminAction(address indexed admin, bytes32 indexed action, address indexed asset, uint256 oldValue, uint256 newValue);
 
     function setPrice(address asset, uint256 price) external onlyOwner {
+        uint256 oldPrice = prices[asset].price;
         prices[asset] = PriceData(price, block.timestamp);
         emit PriceUpdated(asset, price, block.timestamp);
+        emit OracleAdminAction(msg.sender, keccak256("SET_PRICE"), asset, oldPrice, price);
     }
 
     function setStaleThreshold(uint256 threshold) external onlyOwner {
         emit StaleThresholdUpdated(staleThreshold, threshold);
+        emit OracleAdminAction(msg.sender, keccak256("SET_STALE_THRESHOLD"), address(0), staleThreshold, threshold);
         staleThreshold = threshold;
     }
 
