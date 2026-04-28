@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { YieldAnalyticsPanel } from '@/components/dashboard/YieldAnalyticsPanel';
+import { YieldChart } from '@/components/YieldChart';
 import { Card, CardHeader, CardBody } from '@/components/ui';
 
 export default function YieldAnalyticsPage() {
@@ -70,6 +71,19 @@ export default function YieldAnalyticsPage() {
                 </select>
               </div>
             </div>
+          </CardBody>
+        </Card>
+
+        {/* APY Growth Chart */}
+        <Card variant="default" className="mb-6">
+          <CardHeader title="APY Growth Over Time" />
+          <CardBody>
+            <YieldChart
+              vaultId={selectedContract || undefined}
+              timeRange={timeRange === 7 ? '7d' : timeRange === 30 ? '30d' : timeRange === 90 ? '90d' : 'all'}
+              height={400}
+              showArea={true}
+            />
           </CardBody>
         </Card>
 

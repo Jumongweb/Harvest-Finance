@@ -98,4 +98,15 @@ export class VaultsController {
   async getPublicVaults(): Promise<VaultResponseDto[]> {
     return this.vaultsService.getPublicVaults();
   }
+
+  @Get('apy-history')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get APY history for vaults' })
+  @ApiResponse({ status: 200, description: 'APY history retrieved successfully' })
+  async getApyHistory(
+    @Query('vaultId') vaultId?: string,
+    @Query('timeRange') timeRange: string = '30d',
+  ): Promise<any[]> {
+    return this.vaultsService.getApyHistory(vaultId, timeRange);
+  }
 }
