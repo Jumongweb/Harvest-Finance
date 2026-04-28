@@ -98,4 +98,12 @@ export class VaultsController {
   async getPublicVaults(): Promise<VaultResponseDto[]> {
     return this.vaultsService.getPublicVaults();
   }
+
+  @Get('metadata')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get vault metadata (names, symbols, asset pairs)' })
+  @ApiResponse({ status: 200, description: 'Vault metadata retrieved successfully' })
+  async getVaultsMetadata(): Promise<any[]> {
+    return this.vaultsService.getVaultsMetadata();
+  }
 }
