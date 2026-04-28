@@ -15,6 +15,8 @@ contract Storage is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
 
     mapping(bytes32 => address) private _addresses;
 
+    event StorageAddressSet(address indexed admin, bytes32 indexed key, address indexed value, address previousValue);
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -35,7 +37,9 @@ contract Storage is Initializable, AccessControlUpgradeable, UUPSUpgradeable {
      */
     function setAddress(bytes32 key, address value) external onlyRole(GOVERNANCE_ROLE) {
         require(value != address(0), "Storage: zero address");
+        address previousValue = _addresses[key];
         _addresses[key] = value;
+        emit StorageAddressSet(msg.sender, key, value, previousValue);
     }
 
     /**
